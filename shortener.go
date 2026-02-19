@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 )
 
 type Shortener struct {
@@ -22,4 +23,14 @@ func (s *Shortener) Shorten(originalURL string) string {
 
 	s.urls[shortCode] = originalURL
 	return shortCode
+}
+
+func (s *Shortener) Retrieve(shortCode string) (string, error) {
+	originalURL, exists := s.urls[shortCode]
+	if !exists {
+		var ErrURLNotFound = errors.New("URL not found")
+		return "", ErrURLNotFound
+	}
+
+	return originalURL, nil
 }
