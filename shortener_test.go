@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"sync"
+	"testing"
+)
 
 func TestShortenURL(t *testing.T) {
 	shortener := NewShortener()
@@ -39,5 +43,34 @@ func TestRetrieveNonExistentURL(t *testing.T) {
 	_, err := shortener.Retrieve("nonexistent")
 	if err == nil {
 		t.Error("Expected error for non-existent URL")
+	}
+}
+
+func TestConcurrentShorten(t *testing.T) {
+	shortener := NewShortener()
+
+	const numGoroutines = 100
+	urls := make(map[string]string)
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			url := fmt.Sprintf("https://example.com/%d", i)
+			short := shortener.Shorten(url)
+
+			mu.Lock()
+			urls[short] = url
+			mu.Unlock()
+		}(i)
+	}
+
+	wg.Wait()
+
+	if len(urls) != numGoroutines {
+		t.Errorf("Expected %d URLs, got %d", numGoroutines, len(urls))
 	}
 }
